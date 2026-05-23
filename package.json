@@ -1,0 +1,28 @@
+{
+  "name": "haex-claude-proxy-resolver-sqlite",
+  "version": "0.1.0",
+  "description": "SQLite + AES-GCM credential resolver plugin for haex-claude-proxy. Reads the active llm_credentials row from a Hermes SQLite database.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "peerDependencies": {
+    "haex-claude-proxy": "^0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "haex-claude-proxy": {
+      "optional": true
+    }
+  }
+}

@@ -27,6 +27,7 @@
  * Contract: see haex-claude-proxy/src/resolvers/types.md.
  */
 import path from "node:path";
+import { promises as fsp } from "node:fs";
 import { randomBytes } from "node:crypto";
 
 import Database from "better-sqlite3";
@@ -114,6 +115,31 @@ export function create(env) {
               type: "api_error",
               message: `decrypt failed for credential ${row.id}: ${e.message}`,
             },
+          };
+        }
+        // setup-token-issued credentials look like api_key rows from
+        // Hermes' perspective (`sk-ant-oat01-…` stored in api_key_data),
+        // but Anthropic blocks them as Bearer against /v1/messages with
+        // a cryptic "rate_limit_error". The CLI accepts them via the
+        // CLAUDE_CODE_OAUTH_TOKEN env var, so we route through the
+        // claude-CLI spawn path instead of forwardAnthropicMessages.
+        // Detection by token prefix keeps the regular `sk-ant-api03-…`
+        // forwarding path intact.
+        if (row.provider === "anthropic" && apiKey.startsWith("sk-ant-oat01-")) {
+          const spawnId = randomBytes(12).toString("hex");
+          const home = path.join(credsRoot, spawnId);
+          // claude-CLI also wants a writable HOME (it stashes per-user
+          // .claude.json on first start). Empty dir is fine — auth comes
+          // entirely from the env var.
+          await fsp.mkdir(path.join(home, ".claude"), {
+            recursive: true,
+            mode: 0o700,
+          });
+          return {
+            mode: "oauth_claude",
+            home,
+            credId: String(row.id),
+            envExtra: { CLAUDE_CODE_OAUTH_TOKEN: apiKey },
           };
         }
         return {

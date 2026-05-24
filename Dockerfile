@@ -33,9 +33,16 @@ WORKDIR /app
 # resolves through standard Node module resolution. npm handles the
 # better-sqlite3 native binding (prebuilds for linux-x64 + linux-arm64
 # ship from better-sqlite3 itself; no node-gyp toolchain needed here).
+#
+# `--install-links` forces npm to COPY the local package into
+# node_modules instead of symlinking (the default for `npm install
+# <path>`). Without it, /app/node_modules/haex-claude-proxy-resolver-
+# sqlite would just be a symlink back to /tmp/plugin — which we delete
+# in the same RUN, leaving a dangling link and a runtime
+# `MODULE_NOT_FOUND` when the proxy boots.
 COPY package.json package-lock.json* /tmp/plugin/
 COPY src/ /tmp/plugin/src/
-RUN npm install --omit=dev --no-audit --no-fund /tmp/plugin \
+RUN npm install --omit=dev --no-audit --no-fund --install-links /tmp/plugin \
  && rm -rf /tmp/plugin /root/.npm \
  && chown -R node:node /app/node_modules
 

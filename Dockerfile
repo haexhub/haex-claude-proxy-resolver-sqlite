@@ -22,6 +22,10 @@
 
 FROM ghcr.io/haexhub/haex-claude-proxy:latest
 
+# Base image ends with `USER node`; /app is owned by root, so the
+# plugin install would EACCES on /app/node_modules. Swap back to root
+# for the install layer and drop back to node for runtime.
+USER root
 WORKDIR /app
 
 # Stage the plugin as a local package, then npm-install it into /app
@@ -32,6 +36,8 @@ WORKDIR /app
 COPY package.json package-lock.json* /tmp/plugin/
 COPY src/ /tmp/plugin/src/
 RUN npm install --omit=dev --no-audit --no-fund /tmp/plugin \
- && rm -rf /tmp/plugin /root/.npm
+ && rm -rf /tmp/plugin /root/.npm \
+ && chown -R node:node /app/node_modules
 
+USER node
 ENV PROXY_RESOLVER=haex-claude-proxy-resolver-sqlite
